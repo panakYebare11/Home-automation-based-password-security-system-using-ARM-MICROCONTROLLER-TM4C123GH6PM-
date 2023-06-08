@@ -1,0 +1,157 @@
+#include <stdint.h>
+#include "TM4C123GH6PM.h"
+#define LCD_DATA GPIOB
+#define LCD_CTRL GPIOC
+#define RS 0x20 
+#define RW 0x40 
+#define EN 0x80 
+void delayMs(int n);
+void delayUs(int n);
+void LCD_command(unsigned char command);
+void LCD_data(unsigned char data);
+void LCD_init(void);
+int UART0Rx(void);
+void delayMs(int n);
+int compare(void);
+char dst[4]={'1','1','5','1'}, a[4];
+int count=0;
+
+int main(void)
+{
+//char c;
+char i;
+int k;
+LCD_init();
+SYSCTL->RCGCUART |= 1; 
+SYSCTL->RCGCGPIO |= 1; 
+SYSCTL->RCGCGPIO |= 0x20;
+UART0->CTL = 0;
+UART0->IBRD = 104;
+UART0->FBRD = 11; 
+UART0->CC = 0;
+UART0->LCRH = 0x60; 
+UART0->CTL = 0x301; 
+GPIOA->DEN = 0x03;
+GPIOA->AFSEL = 0x03; 
+GPIOA->PCTL = 0x11; 
+GPIOF->DIR = 0x0E; 
+GPIOF->DEN = 0x0E;
+GPIOF->DATA = 0;
+LCD_init();
+LCD_command(1); 
+LCD_command(0x80); 
+	for(i=0;i<4;i++)
+{
+a[i]= UART0Rx(); 
+delayMs(50);
+LCD_data('*');
+delayMs(50);
+}
+k=compare();
+if(k==1)
+{
+LCD_command(0xC0);
+delayMs(500);
+LCD_data('C');
+LCD_data('O');
+LCD_data('R');
+LCD_data('R');
+LCD_data('E');
+LCD_data('T');
+delayMs(500);
+GPIOF->DATA = 8;	
+}
+else
+{
+LCD_command(0xC0);
+delayMs(500);
+LCD_data('W');
+LCD_data('R');
+LCD_data('O');
+LCD_data('N');
+LCD_data('G');
+delayMs(500);
+GPIOF->DATA = 2;
+}
+}
+int UART0Rx(void)
+{
+int c;
+while((UART0->FR & 0x10) != 0); 
+c = UART0->DR; 
+return c;
+}
+void delayMs(int n)
+{
+int i, j ;
+for(i = 0 ; i < n; i++)
+for(j = 0; j < 3180; j++)
+{} 
+}
+void LCD_init(void)
+{
+SYSCTL->RCGCGPIO |= 0x04;
+SYSCTL->RCGCGPIO |= 0x02; 
+LCD_CTRL->DIR |= 0xE0; 
+LCD_CTRL->DEN |= 0xE0; 
+LCD_DATA->DIR = 0xFF; 
+LCD_DATA->DEN = 0xFF; 
+delayMs(20); 
+LCD_command(0x30);
+delayMs(5);
+LCD_command(0x30);
+delayUs(100);
+LCD_command(0x30);
+LCD_command(0x38); 
+*/
+LCD_command(0x06);
+LCD_command(0x01); 
+LCD_command(0x0F); 
+}
+void LCD_data(unsigned char data)
+{
+LCD_CTRL->DATA = RS; 
+LCD_DATA->DATA = data;
+LCD_CTRL->DATA = EN | RS; 
+delayUs(0);
+LCD_CTRL->DATA = 0;
+delayUs(40);
+}
+void LCD_command(unsigned char command)
+{
+LCD_CTRL->DATA = 0; 
+LCD_DATA->DATA = command;
+LCD_CTRL->DATA = EN; 
+delayUs(0);
+LCD_CTRL->DATA = 0;
+if (command < 4)
+delayMs(2); 
+else
+delayUs(40); 
+}
+int compare(void)
+{
+int j;
+for(j=0;j<4;j++)
+{
+if(a[j]-dst[j]==0)
+{
+count=count+1;
+}
+}
+if(count==4)
+return 1;
+else
+return 0;
+}
+void delayUs(int n)
+{
+int i, j;
+for(i = 0 ; i < n; i++)
+for(j = 0; j < 3; j++)
+{} 
+}
+void SystemInit(void)
+{ 
+SCB->CPACR |=0x00f00000;
+}
